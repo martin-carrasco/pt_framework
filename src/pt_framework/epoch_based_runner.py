@@ -100,11 +100,13 @@ class EpochBasedRunner(BaseRunner):
         now_cache = dst_file
         move_list = []
         for idx in range(self.save_params['cache_ckpt_keep_nums']):
-            new_cache = self.PREV_CACHE_CKPT_NAME.format(idx)
+            new_cache = osp.join(
+                    out_dir, self.PREV_CACHE_CKPT_NAME.format(idx+1))
             if os.path.exists(now_cache):
                 move_list.append([now_cache, new_cache])
             now_cache = new_cache
-        for now_cache, new_cache in move_list.reverse():
+        move_list.reverse()
+        for now_cache, new_cache in move_list:
             shutil.move(now_cache, new_cache)
 
         if not only_as_cache:
