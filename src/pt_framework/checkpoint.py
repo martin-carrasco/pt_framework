@@ -309,7 +309,8 @@ def save_checkpoint(model, filename, optimizer=None, meta=None):
 
     checkpoint = {
         'meta': meta,
-        'state_dict': weights_to_cpu(get_state_dict(model))
+        #'state_dict': weights_to_cpu(get_state_dict(model)),
+        'state_dict': get_state_dict(model),
     }
     # save optimizer state dict in the checkpoint
     if isinstance(optimizer, Optimizer):
@@ -330,4 +331,6 @@ def save_checkpoint(model, filename, optimizer=None, meta=None):
             f.flush()
     else:
         import torch_xla.core.xla_model as xm
-        xm.save(checkpoint, filename)
+        with open(filename, 'wb') as f:
+            xm.save(checkpoint, f)
+            f.flush()

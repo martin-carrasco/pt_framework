@@ -17,6 +17,29 @@ from .epoch_based_runner import EpochBasedRunner
 from .hooks.optimizer import OptimizerHook, DistOptimizerHook, TPUOptimizerHook
 
 class TPUEpochBasedRunner(EpochBasedRunner):
+    def __init__(self, rec_save_freq=50, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rec_save_freq = rec_save_freq
+
+    def run_epoch(self):
+        self.model.train()
+        self._max_iters = self._max_epochs * len(self.data_loader)
+        self.call_hook('before_train_epoch')
+        time.sleep(2)  # Prevent possible deadlock during epoch transition
+        for i, data_batch in enumerate(self.data_loader):
+            self._inner_iter = i
+            self.call_hook('before_train_iter')
+            self.run_iter(data_batch, train_mode=True)
+            if (i+1) % self.rec_save_freq == 0:
+                self.record_saver.save(
+                        {'train_results': self.iter_outputs})
+            self.call_hook('after_train_iter')
+            self._iter += 1
+
+        self.call_hook('after_train_epoch')
+        self._epoch += 1
+        xm.rendezvous('After train sync')
+
     def build_data_loader(self):
         super().build_data_loader()
         device = xm.xla_device()
