@@ -349,5 +349,5 @@ class MongoDBSaver(BaseSaver):
         rec = self.records_to_save
         make_mongo_safe(rec)
         rec['exp_id'] = self.exp_id
-        self.collection.save(rec)
+        self.collection.insert_one(rec)
         self.init_records()
