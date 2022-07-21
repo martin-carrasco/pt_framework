@@ -332,7 +332,7 @@ class MongoDBSaver(BaseSaver):
         self.client = pm.MongoClient(self.host, self.port)
         self.database = self.client[self.database_name]
 
-        if self.collection_name not in self.database.collection_names():
+        if self.collection_name not in self.database.list_collection_names():
             self.collection = self.database[self.collection_name]
             self.collection.create_index('exp_id')
         else:

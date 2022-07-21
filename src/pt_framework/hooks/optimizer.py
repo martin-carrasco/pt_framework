@@ -39,10 +39,8 @@ except:
 class DistOptimizerHook(OptimizerHook):
     """Optimizer hook for distributed training."""
 
-    def __init__(self, update_interval=1, grad_clip=None, coalesce=True, bucket_size_mb=-1, use_fp16=False):
+    def __init__(self, update_interval=1, grad_clip=None, use_fp16=False):
         self.grad_clip = grad_clip
-        self.coalesce = coalesce
-        self.bucket_size_mb = bucket_size_mb
         self.update_interval = update_interval
         self.use_fp16 = use_fp16
 
@@ -64,4 +62,28 @@ class DistOptimizerHook(OptimizerHook):
                     clip_grad.clip_grad_norm_(
                             apex.amp.master_params(runner.optimizer), **self.grad_clip)
             runner.optimizer.step()
+            runner.optimizer.zero_grad(set_to_none=True)
+
+
+class TPUOptimizerHook(OptimizerHook):
+    """Optimizer hook for distributed training."""
+
+    def __init__(self, update_interval=1, grad_clip=None, use_fp16=False):
+        self.grad_clip = grad_clip
+        self.update_interval = update_interval
+        self.use_fp16 = use_fp16
+        assert not self.use_fp16, "FP16 not supported!"
+
+    def before_run(self, runner):
+        runner.optimizer.zero_grad(set_to_none=True)
+
+    def after_train_iter(self, runner):
+        runner.iter_outputs['loss'] /= self.update_interval
+        runner.iter_outputs['loss'].backward()
+
+        if self.every_n_iters(runner, self.update_interval):
+            import torch_xla.core.xla_model as xm
+            if self.grad_clip is not None:
+                self.clip_grads(runner.model.parameters())
+            xm.optimizer_step(runner.optimizer)
             runner.optimizer.zero_grad(set_to_none=True)

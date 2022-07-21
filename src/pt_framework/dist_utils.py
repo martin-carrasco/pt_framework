@@ -70,7 +70,27 @@ def _init_dist_slurm(backend, port=None):
     dist.init_process_group(backend=backend)
 
 
+def use_tpu():
+    ret_value = False
+    try: 
+        import torch_xla
+        ret_value = os.environ.get(
+                'XRT_TPU_CONFIG', 'None') != None
+    except:
+        pass
+    return ret_value
+
+
+def get_tpu_dist_info():
+    import torch_xla.core.xla_model as xm
+    rank = xm.get_ordinal()
+    world_size = xm.xrt_world_size()
+    return rank, world_size
+
+
 def get_dist_info():
+    if use_tpu():
+        return get_tpu_dist_info()
     if dist.is_available():
         initialized = dist.is_initialized()
     else:

@@ -12,7 +12,7 @@ import torchvision
 from torch.optim import Optimizer
 from torch.utils import model_zoo
 
-from .dist_utils import get_dist_info
+from .dist_utils import get_dist_info, use_tpu
 from torch.nn.parallel import DataParallel, DistributedDataParallel
 from . import utils
 
@@ -324,6 +324,10 @@ def save_checkpoint(model, filename, optimizer=None, meta=None):
     except:
         pass
     # immediately flush buffer
-    with open(filename, 'wb') as f:
-        torch.save(checkpoint, f)
-        f.flush()
+    if not use_tpu():
+        with open(filename, 'wb') as f:
+            torch.save(checkpoint, f)
+            f.flush()
+    else:
+        import torch_xla.core.xla_model as xm
+        xm.save(checkpoint, filename)
