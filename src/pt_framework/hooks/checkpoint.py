@@ -72,3 +72,12 @@ class CheckpointHook(Hook):
         self._save_checkpoint(runner, only_as_cache=to_cache and (not to_save))
         runner.logger.info(
             f'Saved checkpoint at {runner.iter + 1} iterations')
+
+
+class TPUCheckpointHook(CheckpointHook):
+    def _save_checkpoint(self, runner, only_as_cache, **kwargs):
+        """Save the current checkpoint and delete unwanted checkpoint."""
+        runner.save_checkpoint(
+            self.out_dir, 
+            save_optimizer=self.save_optimizer, 
+            only_as_cache=only_as_cache, **kwargs)

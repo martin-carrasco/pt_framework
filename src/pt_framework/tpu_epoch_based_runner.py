@@ -15,9 +15,11 @@ import torch_xla.core.xla_model as xm
 from .dist_utils import use_tpu
 from .epoch_based_runner import EpochBasedRunner
 from .hooks.optimizer import OptimizerHook, DistOptimizerHook, TPUOptimizerHook
+from .hooks.checkpoint import CheckpointHook, TPUCheckpointHook
 
 class TPUEpochBasedRunner(EpochBasedRunner):
     def __init__(self, rec_save_freq=50, *args, **kwargs):
+        assert use_tpu(), "Must use TPU!"
         super().__init__(*args, **kwargs)
         self.rec_save_freq = rec_save_freq
 
@@ -38,7 +40,6 @@ class TPUEpochBasedRunner(EpochBasedRunner):
 
         self.call_hook('after_train_epoch')
         self._epoch += 1
-        xm.rendezvous('After train sync')
 
     def build_data_loader(self):
         super().build_data_loader()
@@ -46,7 +47,6 @@ class TPUEpochBasedRunner(EpochBasedRunner):
         self.data_loader = pl.MpDeviceLoader(self.data_loader, device)
 
     def register_optimizer_hook(self):
-        assert use_tpu(), "Must use TPU!"
         opt_hook_builder = self.optimizer_hook_params['builder']
         if opt_hook_builder == OptimizerHook or opt_hook_builder == DistOptimizerHook:
             opt_hook_builder = TPUOptimizerHook
@@ -56,3 +56,14 @@ class TPUEpochBasedRunner(EpochBasedRunner):
         assert isinstance(optimizer_hook, TPUOptimizerHook),\
                 "Please Use TPU Optimizer Hook!"
         self.register_hook(optimizer_hook)
+
+    def register_save_ckpt_hook(self):
+        ckpt_hook_builder = self.save_params['ckpt_hook_builder']
+        if ckpt_hook_builder == CheckpointHook:
+            ckpt_hook_builder = TPUCheckpointHook
+        save_ckpt_hook = ckpt_hook_builder(
+                **self.save_params['ckpt_hook_kwargs'])
+        assert isinstance(save_ckpt_hook, TPUCheckpointHook), \
+                "Please Use TPU Checkpoint Hook!"
+        self.register_hook(save_ckpt_hook, priority='LOWEST')
+        self.save_ckpt_hook = save_ckpt_hook # for later loading purpose

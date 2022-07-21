@@ -12,6 +12,7 @@ import torch
 
 from .base_runner import BaseRunner
 from .checkpoint import symlink, save_checkpoint
+from .dist_utils import get_dist_info
 
 
 class EpochBasedRunner(BaseRunner):
@@ -95,6 +96,12 @@ class EpochBasedRunner(BaseRunner):
         optimizer = self.optimizer if save_optimizer else None
         save_checkpoint(self.model, filepath, optimizer=optimizer, meta=meta)
 
+        # Mainly used for TPU cases, where this save_checkpoint function 
+        # needs to be called in all devices, but we don't want the following things
+        # to be called in all devices.
+        rank, _ = get_dist_info()
+        if rank != 0:
+            return
         dst_file = osp.join(out_dir, self.LATEST_CKPT_NAME)
 
         now_cache = dst_file
