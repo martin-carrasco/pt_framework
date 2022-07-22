@@ -74,8 +74,9 @@ def use_tpu():
     ret_value = False
     try: 
         import torch_xla
-        ret_value = os.environ.get(
-                'XRT_TPU_CONFIG', None) != None
+        #ret_value = os.environ.get(
+        #        'XRT_TPU_CONFIG', None) != None
+        ret_value = True
     except:
         pass
     return ret_value
