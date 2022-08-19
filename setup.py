@@ -14,6 +14,7 @@ setup(
   ],
   install_requires=[
     'pymongo',
+    'GitPython',
   ],
   classifiers=[
     'Development Status :: 4 - Beta',

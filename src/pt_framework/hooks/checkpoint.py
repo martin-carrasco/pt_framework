@@ -81,3 +81,48 @@ class TPUCheckpointHook(CheckpointHook):
             self.out_dir, 
             save_optimizer=self.save_optimizer, 
             only_as_cache=only_as_cache, **kwargs)
+
+
+class CkptSpecifySaveHook(CheckpointHook):
+    def __init__(self,
+                 specify_iter=[], specify_epoch=[],
+                 *args, **kwargs):
+        self.specify_iter = specify_iter
+        self.specify_epoch = specify_epoch
+        super().__init__(*args, **kwargs)
+
+    def after_train_epoch(self, runner):
+        if (not self.by_epoch) and ((runner.epoch+1) not in self.specify_epoch):
+            return
+        to_cache = self.every_n_epochs(runner, self.cache_interval)
+        to_save = self.every_n_epochs(runner, self.interval)
+        if (runner.epoch+1) in self.specify_epoch:
+            to_save = True
+        skip_save = not (to_cache or to_save)
+        if skip_save:
+            return
+
+        if self.sync_buffer:
+            allreduce_params(runner.model.buffers())
+        self._save_checkpoint(runner, only_as_cache=to_cache and (not to_save))
+        runner.logger.info(f'Saved checkpoint at {runner.epoch + 1} epochs')
+
+    def after_train_iter(self, runner):
+        if (self.by_epoch) and ((runner.iter+1) not in self.specify_iter):
+            return
+        to_cache = self.every_n_iters(runner, self.cache_interval)
+        to_save = self.every_n_iters(runner, self.interval)
+        if (runner.iter+1) in self.specify_iter:
+            to_save = True
+        skip_save = not (to_cache or to_save)
+        if skip_save:
+            return
+
+        if self.sync_buffer:
+            allreduce_params(runner.model.buffers())
+        self._save_checkpoint(
+                runner, only_as_cache=to_cache and (not to_save),
+                filename_tmpl='epoch_{}_iter_' + str(runner.iter+1) + '.pth',
+                )
+        runner.logger.info(
+            f'Saved checkpoint at {runner.iter + 1} iterations')
