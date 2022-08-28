@@ -22,6 +22,7 @@ import torch
 from argparse import Namespace
 
 from ..utils import mkdir_or_exist
+from ..dist_utils import get_dist_info
 from .hook import Hook
 from ..dist_utils import master_only
 
@@ -275,7 +276,10 @@ class FileSaver(BaseSaver):
     def __init__(self, out_dir, *args, **kwargs):
         super(FileSaver, self).__init__(*args, **kwargs)
         self.out_dir = osp.join(out_dir, 'records')
-        mkdir_or_exist(self.out_dir)
+
+        rank, _ = get_dist_info()
+        if rank == 0:
+            mkdir_or_exist(self.out_dir)
 
         self.init_records()
 
