@@ -127,6 +127,13 @@ class EpochBasedRunner(BaseRunner):
                 os.remove(dst_file)
             shutil.move(filepath, dst_file)
 
+    def cleanup_cached_models(self, out_dir):
+        for idx in range(self.save_params['cache_ckpt_keep_nums']):
+            new_cache = osp.join(
+                    out_dir, self.PREV_CACHE_CKPT_NAME.format(idx+1))
+            if os.path.exists(new_cache):
+                os.remove(new_cache)
+
 
 class MultiEpochBasedRunner:
     """Multiple Epoch-based Runners.

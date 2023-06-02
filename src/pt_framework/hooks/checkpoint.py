@@ -73,6 +73,9 @@ class CheckpointHook(Hook):
         runner.logger.info(
             f'Saved checkpoint at {runner.iter + 1} iterations')
 
+    def after_run(self, runner):
+        runner.cleanup_cached_models(self.out_dir)
+
 
 class TPUCheckpointHook(CheckpointHook):
     def _save_checkpoint(self, runner, only_as_cache, **kwargs):
