@@ -89,9 +89,11 @@ class TPUCheckpointHook(CheckpointHook):
 class CkptSpecifySaveHook(CheckpointHook):
     def __init__(self,
                  specify_iter=[], specify_epoch=[],
+                 cache_interval_ckpt=-1,
                  *args, **kwargs):
         self.specify_iter = specify_iter
         self.specify_epoch = specify_epoch
+        self.cache_interval_ckpt = cache_interval_ckpt
         super().__init__(*args, **kwargs)
 
     def after_train_epoch(self, runner):
@@ -113,7 +115,7 @@ class CkptSpecifySaveHook(CheckpointHook):
     def after_train_iter(self, runner):
         if (self.by_epoch) and ((runner.iter+1) not in self.specify_iter):
             return
-        to_cache = self.every_n_iters(runner, self.cache_interval)
+        to_cache = self.every_n_iters(runner, self.cache_interval_ckpt)
         to_save = self.every_n_iters(runner, self.interval)
         if (runner.iter+1) in self.specify_iter:
             to_save = True
