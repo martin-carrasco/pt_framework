@@ -73,6 +73,7 @@ class CheckpointHook(Hook):
         runner.logger.info(
             f'Saved checkpoint at {runner.iter + 1} iterations')
 
+    @master_only
     def after_run(self, runner):
         runner.cleanup_cached_models(self.out_dir)
 
