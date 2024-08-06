@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "pt-framework"
+version = "0.1.0"
+description = "Supporting library pytorch"
+authors = ["Martin Carrasco <martin.carrasco@utec.edu.pe>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+numpy = "^2.0.1"
+matplotlib = "^3.9.0"
+pymongo = "^4.8.0"
+gitpython = "^3.1.43"
+
+
+[[tool.poetry.source]]
+name = "pytorch-gpu"
+url = "https://download.pytorch.org/whl/cu121"
+priority = "explicit"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
